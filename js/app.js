@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-const APP_VERSION="2.2.4";const LOCAL_STORAGE_KEY="freezer_inventory_app_data";const MIGRATION_DISMISSED_KEY="furikore_migration_dismissed_v2";const FIRESTORE_PATH=["households","default","areas","freezer","items"];
+const APP_VERSION="2.2.5";const LOCAL_STORAGE_KEY="freezer_inventory_app_data";const MIGRATION_DISMISSED_KEY="furikore_migration_dismissed_v2";const FIRESTORE_PATH=["households","default","areas","freezer","items"];
 const CATEGORIES=["鶏肉","豚肉","牛肉","加工肉","魚介類","野菜","主食","冷凍食品","アイス","お菓子","調味料","作り置き","その他"];
 const firebaseConfig={apiKey:"AIzaSyCo76wuPHhxCd3NH_qGoQxplxhVLNhrYsQ",authDomain:"furikore-395e8.firebaseapp.com",projectId:"furikore-395e8",storageBucket:"furikore-395e8.firebasestorage.app",messagingSenderId:"608348115093",appId:"1:608348115093:web:84623fa7dd36cd5e94cb9c"};
 const app=initializeApp(firebaseConfig);const auth=getAuth(app);const db=getFirestore(app);const provider=new GoogleAuthProvider();const itemsRef=collection(db,...FIRESTORE_PATH);let items=[];let unsubscribeItems=null;let mode="display";const $=(id)=>document.getElementById(id);
@@ -120,12 +120,14 @@ function getRecentTemplates(){
   return[...map.values()];
 }function renderRecent(){els.recentList.innerHTML="";const r=getRecentTemplates();if(!r.length){els.recentList.innerHTML='<p class="muted">登録後によく使う候補が表示されます。</p>';return}r.forEach(i=>{const b=document.createElement("button");b.type="button";b.className="recent-chip";b.textContent=i.name;b.addEventListener("click",()=>useRecent(i));els.recentList.appendChild(b)})}function useRecent(i){mode="input";setModeButtons();resetForm();els.name.value=i.name;els.category.value=normalizeCategory(i.category);els.quantity.value="1";els.unit.value=i.unit||"個";els.location.value=i.location||"未設定";els.memo.value=i.memo||"";els.frozenDate.value=todayIso();window.scrollTo({top:$("formCard").offsetTop-10,behavior:"smooth"})}
 
+
 function getInputFilteredItems(){
   const q=(els.inputSearch?.value||"").trim().toLowerCase();
   const cat=els.inputFilterCategory?.value||"all";
   const sort=els.inputSort?.value||"ageDesc";
+
   return items.filter((item)=>{
-    const hay=`${item.name} ${item.category} ${item.location} ${item.memo}`.toLowerCase();
+    const hay=`${item.name||""} ${item.category||""} ${item.location||""} ${item.memo||""}`.toLowerCase();
     return (!q||hay.includes(q))&&(cat==="all"||item.category===cat);
   }).sort((a,b)=>{
     const da=daysSince(a.frozenDate)??-1;
@@ -133,11 +135,11 @@ function getInputFilteredItems(){
     if(sort==="ageAsc"){
       if(da!==db)return da-db;
     }else if(sort==="category"){
-      const ca=`${a.category}${a.name}`;
-      const cb=`${b.category}${b.name}`;
+      const ca=`${a.category||""}${a.name||""}`;
+      const cb=`${b.category||""}${b.name||""}`;
       return ca.localeCompare(cb,"ja");
     }else if(sort==="name"){
-      return a.name.localeCompare(b.name,"ja");
+      return (a.name||"").localeCompare(b.name||"","ja");
     }else if(sort==="quantityDesc"){
       const qa=Number(a.quantity||0);
       const qb=Number(b.quantity||0);
@@ -149,7 +151,7 @@ function getInputFilteredItems(){
     }else{
       if(db!==da)return db-da;
     }
-    return a.name.localeCompare(b.name,"ja");
+    return (a.name||"").localeCompare(b.name||"","ja");
   });
 }
 
@@ -166,8 +168,8 @@ function renderInputInventory(){
     const age=daysSince(item.frozenDate);
     const cls=ageClass(age);
     node.classList.add(`age-${cls}`);
-    node.querySelector(".item-title").textContent=item.name;
-    node.querySelector(".item-meta").textContent=`${item.category}・${item.location}・${item.frozenDate||"日付未設定"}`;
+    node.querySelector(".item-title").textContent=item.name||"名称未設定";
+    node.querySelector(".item-meta").textContent=`${item.category||"その他"}・${item.location||"未設定"}・${item.frozenDate||"日付未設定"}`;
     const ageBadge=node.querySelector(".age-badge");
     ageBadge.textContent=ageLabel(age);
     if(cls!=="fresh")ageBadge.classList.add(cls);
@@ -175,7 +177,7 @@ function renderInputInventory(){
     memoLine.textContent=item.memo?`メモ：${item.memo}`:"";
     memoLine.classList.toggle("hidden",!item.memo);
     const qtyDisplay=node.querySelector(".qty-display");
-    qtyDisplay.textContent=`${formatQty(item.quantity)}${item.unit}`;
+    qtyDisplay.textContent=`${formatQty(item.quantity)}${item.unit||"個"}`;
     node.querySelector(".dec-one").addEventListener("click",()=>changeQty(item,-1));
     node.querySelector(".dec-quarter").addEventListener("click",()=>changeQty(item,-0.25));
     node.querySelector(".inc-quarter").addEventListener("click",()=>changeQty(item,0.25));
