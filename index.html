@@ -1,34 +1,80 @@
-<!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>ふりこれ</title>
-  <meta name="theme-color" content="#f7ddea" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="ふりこれ" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <link rel="apple-touch-icon" href="./icons/icon-180.png" />
-  <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./css/style.css" />
-</head>
-<body>
-  <div class="app-shell">
-    <header class="hero"><div><p class="eyebrow">Freezer Inventory</p><h1>ふりこれ</h1><p class="lead">冷凍庫の「ある・使う・買わない」を、ふたりで共有。</p></div><div class="app-badge">v2.2.1</div></header>
-    <main id="mainApp" class="hidden">
-      <section class="toolbar card"><div class="summary"><span id="itemCount">0件</span><span id="syncStatus">同期待ち</span></div><div class="mode-tabs"><button id="displayModeBtn" class="tab active" type="button">表示</button><button id="inputModeBtn" class="tab" type="button">入力</button></div></section>
-      <section id="migrationCard" class="card migration-card hidden"><div><h2>ローカルデータを移行しますか？</h2><p class="muted">この端末にv1のデータが残っています。Firebaseへコピーすると、ログイン中の2人で共有できます。</p></div><div class="row-actions"><button id="migrateBtn" class="primary" type="button">Firebaseへ移行</button><button id="dismissMigrationBtn" class="ghost" type="button">あとで</button></div></section>
-      <section id="displayPanel">
-        <section class="card filters"><input id="searchInput" placeholder="在庫を検索" /><select id="filterCategory"><option value="all">すべて</option><option>鶏肉</option><option>豚肉</option><option>牛肉</option><option>加工肉</option><option>魚介類</option><option>野菜</option><option>主食</option><option>冷凍食品</option><option>アイス</option><option>お菓子</option><option>調味料</option><option>作り置き</option><option>その他</option></select></section>
-        
-        <section id="displayList" class="display-list"></section>
-      </section>
-      <section id="inputPanel" class="hidden"><section class="card recent-card"><div class="section-title-row"><h2>最近登録したもの</h2><p class="muted mini">タップで再登録</p></div><div id="recentList" class="recent-list"></div></section><section id="formCard" class="card"><h2 id="formTitle">在庫を追加</h2><form id="itemForm"><input type="hidden" id="editingId" /><div class="form-grid"><label>品名<input id="nameInput" required placeholder="例：鶏むね肉" autocomplete="off" /></label><label>カテゴリ<select id="categoryInput"><option>鶏肉</option><option>豚肉</option><option>牛肉</option><option>加工肉</option><option>魚介類</option><option>野菜</option><option>主食</option><option>冷凍食品</option><option>アイス</option><option>お菓子</option><option>調味料</option><option>作り置き</option><option>その他</option></select></label><label>数量<input id="quantityInput" type="number" min="0" step="0.25" value="1" inputmode="decimal" /></label><label>単位<select id="unitInput"><option>個</option><option>袋</option><option>パック</option><option>食分</option><option>本</option><option>枚</option></select></label><label>冷凍日<input id="frozenDateInput" type="date" /></label><label>保管場所<select id="locationInput"><option>未設定</option><option>上段</option><option>中段</option><option>下段</option><option>ドアポケット</option><option>別冷凍庫</option></select></label></div><label>メモ<textarea id="memoInput" rows="2" placeholder="例：200g単位、下味冷凍、早めに使う"></textarea></label><div class="form-actions"><button class="primary" type="submit">保存</button><button id="cancelEditBtn" class="ghost hidden" type="button">編集をキャンセル</button></div></form></section><section id="inventoryList" class="list"></section></section>
-      <section class="card backup-card"><h2>バックアップ</h2><p class="muted">Firebaseが本体ですが、念のためJSONでも控えを取れます。</p><div class="row-actions"><button id="exportBtn" class="ghost" type="button">JSONエクスポート</button><label class="import-label">JSONインポート<input id="importInput" type="file" accept="application/json" hidden /></label></div></section>
-    </main>
-    <section id="authCard" class="card auth-card"><div><h2>ログイン</h2><p id="authStatus" class="muted">Googleアカウントでログインすると、夫婦で同じ在庫を共有できます。</p></div><div class="auth-actions"><button id="loginBtn" class="primary">Googleでログイン</button><button id="logoutBtn" class="ghost hidden">ログアウト</button></div></section>
-  </div>
-  <template id="itemTemplate"><article class="item-card"><div class="item-main"><div><div class="item-title"></div><div class="item-meta"></div></div><div class="age-badge"></div></div><div class="memo-line"></div><div class="qty-control"><button class="qty-btn dec-one" type="button">−1</button><button class="qty-btn dec-quarter" type="button">−0.25</button><button class="qty-display edit-qty-btn" type="button"></button><button class="qty-btn inc-quarter" type="button">＋0.25</button><button class="qty-btn inc-one" type="button">＋1</button></div><div class="item-actions"><button class="ghost small edit-btn" type="button">編集</button><button class="danger small finish-btn" type="button">使い切り</button></div></article></template>
-  <script type="module" src="./js/app.js"></script>
-</body>
-</html>
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+const APP_VERSION="2.2.1";const LOCAL_STORAGE_KEY="freezer_inventory_app_data";const MIGRATION_DISMISSED_KEY="furikore_migration_dismissed_v2";const FIRESTORE_PATH=["households","default","areas","freezer","items"];
+const CATEGORIES=["鶏肉","豚肉","牛肉","加工肉","魚介類","野菜","主食","冷凍食品","アイス","お菓子","調味料","作り置き","その他"];
+const firebaseConfig={apiKey:"AIzaSyCo76wuPHhxCd3NH_qGoQxplxhVLNhrYsQ",authDomain:"furikore-395e8.firebaseapp.com",projectId:"furikore-395e8",storageBucket:"furikore-395e8.firebasestorage.app",messagingSenderId:"608348115093",appId:"1:608348115093:web:84623fa7dd36cd5e94cb9c"};
+const app=initializeApp(firebaseConfig);const auth=getAuth(app);const db=getFirestore(app);const provider=new GoogleAuthProvider();const itemsRef=collection(db,...FIRESTORE_PATH);let items=[];let unsubscribeItems=null;let mode="display";const $=(id)=>document.getElementById(id);
+const els={authStatus:$("authStatus"),loginBtn:$("loginBtn"),logoutBtn:$("logoutBtn"),mainApp:$("mainApp"),itemCount:$("itemCount"),syncStatus:$("syncStatus"),migrationCard:$("migrationCard"),migrateBtn:$("migrateBtn"),dismissMigrationBtn:$("dismissMigrationBtn"),form:$("itemForm"),formTitle:$("formTitle"),editingId:$("editingId"),name:$("nameInput"),category:$("categoryInput"),quantity:$("quantityInput"),unit:$("unitInput"),frozenDate:$("frozenDateInput"),location:$("locationInput"),memo:$("memoInput"),cancelEdit:$("cancelEditBtn"),search:$("searchInput"),filterCategory:$("filterCategory"),inventoryList:$("inventoryList"),displayList:$("displayList"),recentList:$("recentList"),displayPanel:$("displayPanel"),inputPanel:$("inputPanel"),displayModeBtn:$("displayModeBtn"),inputModeBtn:$("inputModeBtn"),exportBtn:$("exportBtn"),importInput:$("importInput"),template:$("itemTemplate")};
+function todayIso(){return new Date().toISOString().slice(0,10)}function daysSince(s){if(!s)return null;const start=new Date(`${s}T00:00:00`);if(Number.isNaN(start.getTime()))return null;const n=new Date();const t=new Date(n.getFullYear(),n.getMonth(),n.getDate());return Math.floor((t-start)/86400000)}function roundQty(v){return Math.round((Number(v)||0)*4)/4}function formatQty(v){const n=roundQty(v);return Number.isInteger(n)?String(n):String(n).replace(/\.?0+$/,'')}function normalizeCategory(c){const map={"肉":"鶏肉","魚":"魚介類"};return map[c]||(CATEGORIES.includes(c)?c:"その他")}function normalizeItem(raw={}){
+  const name=String(raw.name||raw.itemName||raw.title||raw.foodName||"").trim();
+  const category=normalizeCategory(raw.category||raw.type||"その他");
+  const quantity=roundQty(raw.quantity??raw.amount??raw.count??1);
+  const unit=raw.unit||"個";
+  const frozenDate=raw.frozenDate||raw.date||raw.freezingDate||todayIso();
+  const location=raw.location||raw.place||"未設定";
+  const memo=raw.memo||raw.note||"";
+  return{name,category,quantity,unit,frozenDate,location,memo,schemaVersion:2}
+}
+function ageClass(a){if(a===null)return"fresh";if(a>=61)return"very-old";if(a>=31)return"old";if(a>=15)return"watch";return"fresh"}function ageLabel(a){return a===null?"日付未設定":`冷凍${a}日`}function getFilteredItems(){const q=els.search.value.trim().toLowerCase();const cat=els.filterCategory.value;const f=items.filter(i=>{const hay=`${i.name} ${i.category} ${i.location} ${i.memo}`.toLowerCase();return(!q||hay.includes(q))&&(cat==="all"||i.category===cat)});f.sort((a,b)=>{const da=daysSince(a.frozenDate)??-1;const db=daysSince(b.frozenDate)??-1;if(db!==da)return db-da;return a.name.localeCompare(b.name,"ja")});return f}function render(){const f=getFilteredItems();els.itemCount.textContent=`${items.length}件`;els.displayPanel.classList.toggle("hidden",mode!=="display");els.inputPanel.classList.toggle("hidden",mode!=="input");renderDisplayList(f);renderRecent();renderInventory(f)}
+function renderDisplayList(list){
+  els.displayList.innerHTML="";
+  const usable=list.filter(item=>item && (item.name || item.category || item.quantity !== undefined));
+  if(!usable.length){
+    els.displayList.innerHTML='<div class="card empty">在庫がありません。入力タブから登録しましょう。</div>';
+    return;
+  }
+  const groups={};
+  for(const item of usable){
+    const cat=normalizeCategory(item.category);
+    if(!groups[cat])groups[cat]=[];
+    groups[cat].push(item);
+  }
+  const unknownCategories=Object.keys(groups).filter(cat=>!CATEGORIES.includes(cat)).sort((a,b)=>a.localeCompare(b,"ja"));
+  const ordered=[...CATEGORIES,...unknownCategories];
+  let rendered=0;
+  for(const cat of ordered){
+    if(!groups[cat]||!groups[cat].length)continue;
+    const sec=document.createElement("section");
+    sec.className="display-group card";
+    sec.innerHTML=`<h2>${escapeHtml(cat)}</h2>`;
+    for(const item of groups[cat]){
+      const age=daysSince(item.frozenDate);
+      const cls=ageClass(age);
+      const row=document.createElement("div");
+      row.className=`display-row ${cls}`;
+      const itemName=item.name||"名称未設定";
+      row.innerHTML=`<div><strong>${escapeHtml(itemName)}</strong><div class="display-meta">${escapeHtml(item.location||"未設定")}・${ageLabel(age)}</div></div><span>${formatQty(item.quantity)}${escapeHtml(item.unit||"個")}</span>`;
+      sec.appendChild(row);
+      rendered++;
+    }
+    els.displayList.appendChild(sec);
+  }
+  if(!rendered){
+    els.displayList.innerHTML='<div class="card empty">在庫データはありますが、表示できる形式ではありません。入力タブで編集してください。</div>';
+  }
+}function escapeHtml(str){return String(str).replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[s]))}
+function getRecentTemplates(){
+  const map=new Map();
+  const sorted=[...items]
+    .filter(i=>i && i.name)
+    .sort((a,b)=>{
+      const at=a.createdAt?.seconds||a.updatedAt?.seconds||0;
+      const bt=b.createdAt?.seconds||b.updatedAt?.seconds||0;
+      if(bt!==at)return bt-at;
+      return String(b.frozenDate||"").localeCompare(String(a.frozenDate||""),"ja");
+    });
+  for(const i of sorted){
+    const key=`${i.name}|${i.category}|${i.unit}`;
+    if(!map.has(key))map.set(key,i);
+    if(map.size>=6)break;
+  }
+  return[...map.values()];
+}function renderRecent(){els.recentList.innerHTML="";const r=getRecentTemplates();if(!r.length){els.recentList.innerHTML='<p class="muted">登録後によく使う候補が表示されます。</p>';return}r.forEach(i=>{const b=document.createElement("button");b.type="button";b.className="recent-chip";b.textContent=i.name;b.addEventListener("click",()=>useRecent(i));els.recentList.appendChild(b)})}function useRecent(i){mode="input";setModeButtons();resetForm();els.name.value=i.name;els.category.value=normalizeCategory(i.category);els.quantity.value="1";els.unit.value=i.unit||"個";els.location.value=i.location||"未設定";els.memo.value=i.memo||"";els.frozenDate.value=todayIso();window.scrollTo({top:$("formCard").offsetTop-10,behavior:"smooth"})}
+function renderInventory(list){els.inventoryList.innerHTML="";if(!list.length){els.inventoryList.innerHTML='<div class="card empty">在庫がありません。入力タブから登録しましょう。</div>';return}for(const item of list){const node=els.template.content.firstElementChild.cloneNode(true);const age=daysSince(item.frozenDate);const cls=ageClass(age);node.classList.add(`age-${cls}`);node.querySelector(".item-title").textContent=item.name;node.querySelector(".item-meta").textContent=`${item.category}・${item.location}・${item.frozenDate||"日付未設定"}`;const badge=node.querySelector(".age-badge");badge.textContent=ageLabel(age);if(cls!=="fresh")badge.classList.add(cls);const memo=node.querySelector(".memo-line");memo.textContent=item.memo?`メモ：${item.memo}`:"";memo.classList.toggle("hidden",!item.memo);node.querySelector(".qty-display").textContent=`${formatQty(item.quantity)}${item.unit}`;node.querySelector(".dec-one").addEventListener("click",()=>changeQty(item,-1));node.querySelector(".dec-quarter").addEventListener("click",()=>changeQty(item,-.25));node.querySelector(".inc-quarter").addEventListener("click",()=>changeQty(item,.25));node.querySelector(".inc-one").addEventListener("click",()=>changeQty(item,1));node.querySelector(".edit-qty-btn").addEventListener("click",()=>editQuantityDirect(item));node.querySelector(".edit-btn").addEventListener("click",()=>startEdit(item));node.querySelector(".finish-btn").addEventListener("click",()=>finishItem(item));els.inventoryList.appendChild(node)}}
+async function changeQty(item,delta){const next=roundQty(Number(item.quantity||0)+delta);if(next<=0){const remove=confirm(`${item.name}が0になりました。\n在庫から削除しますか？\n\nOK：削除\nキャンセル：0のまま残す`);if(remove)await deleteDoc(doc(db,...FIRESTORE_PATH,item.id));else await updateDoc(doc(db,...FIRESTORE_PATH,item.id),{quantity:0,updatedAt:serverTimestamp()});return}await updateDoc(doc(db,...FIRESTORE_PATH,item.id),{quantity:next,updatedAt:serverTimestamp()})}async function editQuantityDirect(item){const val=prompt(`${item.name}の数量を入力してください`,formatQty(item.quantity));if(val===null)return;const next=roundQty(Number(val));if(Number.isNaN(next)||next<0){alert("0以上の数字を入力してください。");return}if(next===0){const remove=confirm(`${item.name}を削除しますか？\n\nOK：削除\nキャンセル：0のまま残す`);if(remove){await deleteDoc(doc(db,...FIRESTORE_PATH,item.id));return}}await updateDoc(doc(db,...FIRESTORE_PATH,item.id),{quantity:next,updatedAt:serverTimestamp()})}async function finishItem(item){if(confirm(`${item.name}を使い切りとして削除しますか？`))await deleteDoc(doc(db,...FIRESTORE_PATH,item.id))}
+function startEdit(item){mode="input";setModeButtons();els.editingId.value=item.id;els.formTitle.textContent="在庫を編集";els.name.value=item.name;els.category.value=normalizeCategory(item.category);els.quantity.value=formatQty(item.quantity);els.unit.value=item.unit;els.frozenDate.value=item.frozenDate||todayIso();els.location.value=item.location||"未設定";els.memo.value=item.memo||"";els.cancelEdit.classList.remove("hidden");window.scrollTo({top:$("formCard").offsetTop-10,behavior:"smooth"})}function resetForm(){els.form.reset();els.editingId.value="";els.formTitle.textContent="在庫を追加";els.quantity.value="1";els.frozenDate.value=todayIso();els.category.value="鶏肉";els.cancelEdit.classList.add("hidden")}async function saveForm(e){e.preventDefault();const p=normalizeItem({name:els.name.value,category:els.category.value,quantity:els.quantity.value,unit:els.unit.value,frozenDate:els.frozenDate.value,location:els.location.value,memo:els.memo.value});if(!p.name)return;const id=els.editingId.value;if(id)await updateDoc(doc(db,...FIRESTORE_PATH,id),{...p,updatedAt:serverTimestamp()});else await addDoc(itemsRef,{...p,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});resetForm();mode="display";setModeButtons()}function setModeButtons(){els.displayModeBtn.classList.toggle("active",mode==="display");els.inputModeBtn.classList.toggle("active",mode==="input");render()}
+function readLocalData(){try{const raw=localStorage.getItem(LOCAL_STORAGE_KEY);if(!raw)return[];const parsed=JSON.parse(raw);if(Array.isArray(parsed))return parsed.map(normalizeItem).filter(x=>x.name);if(Array.isArray(parsed.items))return parsed.items.map(normalizeItem).filter(x=>x.name);return[]}catch{return[]}}function showMigrationIfNeeded(){const localItems=readLocalData();const dismissed=localStorage.getItem(MIGRATION_DISMISSED_KEY)==="1";els.migrationCard.classList.toggle("hidden",!(localItems.length&&!dismissed))}async function migrateLocalData(){const localItems=readLocalData();if(!localItems.length)return;if(!confirm(`${localItems.length}件のローカルデータをFirebaseへコピーします。既存データと重複する可能性があります。実行しますか？`))return;const batch=writeBatch(db);for(const item of localItems){const ref=doc(itemsRef);batch.set(ref,{...item,migratedFromLocal:true,createdAt:serverTimestamp(),updatedAt:serverTimestamp()})}await batch.commit();localStorage.setItem(MIGRATION_DISMISSED_KEY,"1");els.migrationCard.classList.add("hidden")}
+function exportJson(){const data={app:"furikore",appVersion:APP_VERSION,exportedAt:new Date().toISOString(),schemaVersion:2,items:items.map(({id,...rest})=>rest)};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`furikore_backup_${todayIso()}.json`;a.click();URL.revokeObjectURL(url)}async function importJson(file){if(!file)return;const text=await file.text();const parsed=JSON.parse(text);const importItems=Array.isArray(parsed)?parsed:parsed.items;if(!Array.isArray(importItems)){alert("読み込める在庫データが見つかりませんでした。");return}if(!confirm(`${importItems.length}件をFirebaseへ追加します。よろしいですか？`))return;const batch=writeBatch(db);importItems.map(normalizeItem).filter(x=>x.name).forEach(item=>{const ref=doc(itemsRef);batch.set(ref,{...item,importedAt:serverTimestamp(),createdAt:serverTimestamp(),updatedAt:serverTimestamp()})});await batch.commit();els.importInput.value=""}
+function subscribeItems(){if(unsubscribeItems)unsubscribeItems();els.syncStatus.textContent="同期中";unsubscribeItems=onSnapshot(itemsRef,snap=>{items=snap.docs.map(d=>{const raw=d.data();return{id:d.id,...normalizeItem(raw),createdAt:raw.createdAt,updatedAt:raw.updatedAt}});els.syncStatus.textContent="同期済み";render()},err=>{console.error(err);els.syncStatus.textContent="同期エラー";alert("Firestoreの読み込みに失敗しました。AuthenticationやFirestore Rulesを確認してください。")})}function setupEvents(){els.loginBtn.addEventListener("click",()=>signInWithPopup(auth,provider));els.logoutBtn.addEventListener("click",()=>signOut(auth));els.form.addEventListener("submit",saveForm);els.cancelEdit.addEventListener("click",resetForm);els.search.addEventListener("input",render);els.filterCategory.addEventListener("change",render);els.displayModeBtn.addEventListener("click",()=>{mode="display";setModeButtons()});els.inputModeBtn.addEventListener("click",()=>{mode="input";setModeButtons()});els.migrateBtn.addEventListener("click",migrateLocalData);els.dismissMigrationBtn.addEventListener("click",()=>{localStorage.setItem(MIGRATION_DISMISSED_KEY,"1");els.migrationCard.classList.add("hidden")});els.exportBtn.addEventListener("click",exportJson);els.importInput.addEventListener("change",e=>importJson(e.target.files?.[0]))}
+onAuthStateChanged(auth,user=>{if(user){els.authStatus.textContent=`${user.email} でログイン中`;els.loginBtn.classList.add("hidden");els.logoutBtn.classList.remove("hidden");els.mainApp.classList.remove("hidden");resetForm();showMigrationIfNeeded();subscribeItems()}else{els.authStatus.textContent="Googleアカウントでログインすると、夫婦で同じ在庫を共有できます。";els.loginBtn.classList.remove("hidden");els.logoutBtn.classList.add("hidden");els.mainApp.classList.add("hidden");if(unsubscribeItems)unsubscribeItems();items=[]}});setupEvents();
