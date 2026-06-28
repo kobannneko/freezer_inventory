@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-const APP_VERSION="2.2.6";const LOCAL_STORAGE_KEY="freezer_inventory_app_data";const MIGRATION_DISMISSED_KEY="furikore_migration_dismissed_v2";const FIRESTORE_PATH=["households","default","areas","freezer","items"];
+const APP_VERSION="2.3";const LOCAL_STORAGE_KEY="freezer_inventory_app_data";const MIGRATION_DISMISSED_KEY="furikore_migration_dismissed_v2";const FIRESTORE_PATH=["households","default","areas","freezer","items"];
 const CATEGORIES=["鶏肉","豚肉","牛肉","加工肉","魚介類","野菜","主食","冷凍食品","アイス","お菓子","調味料","作り置き","その他"];
 const firebaseConfig={apiKey:"AIzaSyCo76wuPHhxCd3NH_qGoQxplxhVLNhrYsQ",authDomain:"furikore-395e8.firebaseapp.com",projectId:"furikore-395e8",storageBucket:"furikore-395e8.firebasestorage.app",messagingSenderId:"608348115093",appId:"1:608348115093:web:84623fa7dd36cd5e94cb9c"};
 const app=initializeApp(firebaseConfig);const auth=getAuth(app);const db=getFirestore(app);const provider=new GoogleAuthProvider();const itemsRef=collection(db,...FIRESTORE_PATH);let items=[];let unsubscribeItems=null;let mode="display";const $=(id)=>document.getElementById(id);
