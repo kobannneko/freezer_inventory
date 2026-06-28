@@ -2,4 +2,6 @@
 .display-list{display:grid;gap:12px}.display-group h2{margin-bottom:8px}.display-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-top:1px dashed rgba(204,143,170,.28)}.display-row:first-of-type{border-top:0}.display-row span{font-weight:900;background:linear-gradient(135deg,#fff1c9,#ffe3ed);color:#9b5a3e;border-radius:999px;padding:8px 11px;white-space:nowrap}.display-meta{margin-top:4px;color:var(--muted);font-size:13px}.display-row.watch .display-meta{color:var(--yellow);font-weight:800}.display-row.old .display-meta{color:var(--orange);font-weight:800}.display-row.very-old .display-meta{color:var(--danger);font-weight:800}
 
 .input-filters{display:grid;grid-template-columns:1.4fr .8fr .8fr;gap:10px;}
+@media (max-width:680px){.input-filters{display:grid;grid-template-columns:1.4fr .8fr .8fr;gap:10px;}}
+
 @media (max-width:680px){.input-filters{grid-template-columns:1fr;}}
