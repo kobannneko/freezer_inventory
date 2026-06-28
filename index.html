@@ -10,11 +10,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <link rel="apple-touch-icon" href="./icons/icon-180.png" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./css/style.css?v=2.2.6" />
+  <link rel="stylesheet" href="./css/style.css?v=2.3" />
 </head>
 <body>
   <div class="app-shell">
-    <header class="hero"><div><p class="eyebrow">Freezer Inventory</p><h1>ふりこれ</h1><p class="lead">冷凍庫の「ある・使う・買わない」を、ふたりで共有。</p></div><div class="app-badge">v2.2.6</div></header>
+    <header class="hero"><div><p class="eyebrow">Freezer Inventory</p><h1>ふりこれ</h1><p class="lead">冷凍庫の「ある・使う・買わない」を、ふたりで共有。</p></div><div class="app-badge">v2.3</div></header>
     <main id="mainApp" class="hidden">
       <section class="toolbar card"><div class="summary"><span id="itemCount">0件</span><span id="syncStatus">同期待ち</span></div><div class="mode-tabs"><button id="displayModeBtn" class="tab active" type="button">表示</button><button id="inputModeBtn" class="tab" type="button">入力</button></div></section>
       <section id="migrationCard" class="card migration-card hidden"><div><h2>ローカルデータを移行しますか？</h2><p class="muted">この端末にv1のデータが残っています。Firebaseへコピーすると、ログイン中の2人で共有できます。</p></div><div class="row-actions"><button id="migrateBtn" class="primary" type="button">Firebaseへ移行</button><button id="dismissMigrationBtn" class="ghost" type="button">あとで</button></div></section>
@@ -24,6 +24,8 @@
         <section id="displayList" class="display-list"></section>
       </section>
       <section id="inputPanel" class="hidden">
+        <section class="card input-tools-heading"><h2>既存在庫を探す</h2><p class="muted">検索・絞り込み・並び替えで編集対象を探せます。</p></section>
+
         <section class="card input-filters"><input id="inputSearchInput" placeholder="入力画面で在庫を検索" /><select id="inputFilterCategory"><option value="all">すべて</option><option>鶏肉</option><option>豚肉</option><option>牛肉</option><option>加工肉</option><option>魚介類</option><option>野菜</option><option>主食</option><option>冷凍食品</option><option>アイス</option><option>お菓子</option><option>調味料</option><option>作り置き</option><option>その他</option></select>
           <select id="inputSortInput">
             <option value="ageDesc">古い順</option>
@@ -38,6 +40,6 @@
     <section id="authCard" class="card auth-card"><div><h2>ログイン</h2><p id="authStatus" class="muted">Googleアカウントでログインすると、夫婦で同じ在庫を共有できます。</p></div><div class="auth-actions"><button id="loginBtn" class="primary">Googleでログイン</button><button id="logoutBtn" class="ghost hidden">ログアウト</button></div></section>
   </div>
   <template id="itemTemplate"><article class="item-card"><div class="item-main"><div><div class="item-title"></div><div class="item-meta"></div></div><div class="age-badge"></div></div><div class="memo-line"></div><div class="qty-control"><button class="qty-btn dec-one" type="button">−1</button><button class="qty-btn dec-quarter" type="button">−0.25</button><button class="qty-display edit-qty-btn" type="button"></button><button class="qty-btn inc-quarter" type="button">＋0.25</button><button class="qty-btn inc-one" type="button">＋1</button></div><div class="item-actions"><button class="ghost small edit-btn" type="button">編集</button><button class="danger small finish-btn" type="button">使い切り</button></div></article></template>
-  <script type="module" src="./js/app.js?v=2.2.6"></script>
+  <script type="module" src="./js/app.js?v=2.3"></script>
 </body>
 </html>
