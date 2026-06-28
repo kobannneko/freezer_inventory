@@ -263,13 +263,84 @@
     }
 
     .hidden { display: none !important; }
+  
+
+    .version { font-size: 12px; color: var(--muted); margin-left: 6px; }
+
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .mode-tabs button.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .compact-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .shopping-section {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .shopping-heading {
+      padding: 10px 12px;
+      font-weight: 800;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .shopping-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid #eef2f7;
+    }
+
+    .shopping-row:last-child { border-bottom: 0; }
+
+    .shopping-name { font-weight: 750; }
+    .shopping-meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .qty-large { font-size: 18px; font-weight: 900; white-space: nowrap; }
+
+    .hint-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .form-note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: -6px;
+      margin-bottom: 10px;
+    }
+
   </style>
 </head>
 <body>
   <header>
     <div class="wrap">
-      <h1>冷凍庫在庫管理</h1>
-      <p class="subtitle">登録・数量管理・期限確認・バックアップができるシンプル版</p>
+      <h1>冷凍庫在庫管理 <span class="version">v1.1</span></h1>
+      <p class="subtitle">在庫を「何個あるか」と「冷凍から何日経ったか」で確認するシンプル版</p>
     </div>
   </header>
 
@@ -281,7 +352,7 @@
 
         <div class="field">
           <label for="name">品名</label>
-          <input id="name" required placeholder="例：鶏もも肉、冷凍うどん" />
+          <input id="name" required placeholder="例：鶏むね肉、冷凍うどん" />
         </div>
 
         <div class="row">
@@ -314,7 +385,7 @@
         <div class="row">
           <div class="field">
             <label for="quantity">数量</label>
-            <input id="quantity" type="number" min="0" step="0.5" value="1" required />
+            <input id="quantity" type="number" min="0" step="1" value="1" required />
           </div>
           <div class="field">
             <label for="unit">単位</label>
@@ -323,12 +394,13 @@
               <option>袋</option>
               <option>パック</option>
               <option>食</option>
-              <option>g</option>
               <option>本</option>
               <option>枚</option>
+              <option>g</option>
             </select>
           </div>
         </div>
+        <p class="form-note">肉は「200gパックが何個」のように、実際に使う単位で登録する想定です。</p>
 
         <div class="row">
           <div class="field">
@@ -336,14 +408,15 @@
             <input id="frozenDate" type="date" />
           </div>
           <div class="field">
-            <label for="bestBefore">期限目安</label>
+            <label for="bestBefore">期限目安（任意）</label>
             <input id="bestBefore" type="date" />
           </div>
         </div>
+        <p class="form-note">v1.1では期限日よりも「冷凍からの経過日数」を重視します。期限目安は必要なものだけ入力してください。</p>
 
         <div class="field">
           <label for="memo">メモ</label>
-          <textarea id="memo" placeholder="例：半分に小分け、味付け済み"></textarea>
+          <textarea id="memo" placeholder="例：200gずつ小分け、味付け済み"></textarea>
         </div>
 
         <div class="actions">
@@ -370,7 +443,12 @@
       <div class="summary">
         <div><strong id="totalKinds">0</strong><span>種類</span></div>
         <div><strong id="totalQty">0</strong><span>合計数量</span></div>
-        <div><strong id="soonCount">0</strong><span>期限近い/超過</span></div>
+        <div><strong id="oldCount">0</strong><span>30日超</span></div>
+      </div>
+
+      <div class="mode-tabs">
+        <button class="secondary active" type="button" id="normalModeBtn">通常</button>
+        <button class="secondary" type="button" id="shoppingModeBtn">買い物モード</button>
       </div>
 
       <div class="toolbar">
@@ -380,31 +458,36 @@
           <option>肉</option><option>魚</option><option>野菜</option><option>惣菜</option><option>主食</option><option>お菓子</option><option>その他</option>
         </select>
         <select id="sortBy">
-          <option value="bestBefore">期限が近い順</option>
-          <option value="frozenDateDesc">冷凍日が新しい順</option>
+          <option value="frozenOldest">古い順</option>
+          <option value="frozenDateDesc">新しい順</option>
           <option value="name">品名順</option>
           <option value="category">カテゴリ順</option>
+          <option value="quantityDesc">数量が多い順</option>
         </select>
       </div>
 
+      <div id="modeHint" class="hint-box hidden"></div>
       <div id="itemsList"></div>
     </section>
   </main>
 
   <script>
+    const APP_VERSION = "1.1";
     const STORAGE_KEY = "freezer_inventory_app_data";
     const CURRENT_SCHEMA_VERSION = 1;
+    const CATEGORY_ORDER = ["肉", "魚", "野菜", "惣菜", "主食", "お菓子", "その他"];
 
     const defaultData = () => ({
       schemaVersion: CURRENT_SCHEMA_VERSION,
+      appVersion: APP_VERSION,
       updatedAt: new Date().toISOString(),
       items: []
     });
 
     let data = loadData();
+    let viewMode = "normal";
 
     const $ = (id) => document.getElementById(id);
-
     const form = $("itemForm");
     const itemsList = $("itemsList");
 
@@ -422,12 +505,12 @@
     }
 
     function migrateData(oldData) {
-      // 将来のアップデートではここに v1 → v2 などの変換処理を追加する。
       if (!oldData || typeof oldData !== "object") return defaultData();
       if (!Array.isArray(oldData.items)) oldData.items = [];
       if (!oldData.schemaVersion) oldData.schemaVersion = 1;
       return {
         schemaVersion: CURRENT_SCHEMA_VERSION,
+        appVersion: APP_VERSION,
         updatedAt: oldData.updatedAt || new Date().toISOString(),
         items: oldData.items.map(normalizeItem)
       };
@@ -451,6 +534,7 @@
 
     function saveData() {
       data.updatedAt = new Date().toISOString();
+      data.appVersion = APP_VERSION;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       render();
     }
@@ -476,6 +560,7 @@
       form.reset();
       $("editingId").value = "";
       $("quantity").value = 1;
+      $("unit").value = "個";
       $("frozenDate").value = new Date().toISOString().slice(0, 10);
       $("formTitle").textContent = "在庫を追加";
     }
@@ -484,7 +569,6 @@
       event.preventDefault();
       const item = getFormItem();
       if (!item.name) return;
-
       const existingIndex = data.items.findIndex((x) => x.id === item.id);
       if (existingIndex >= 0) {
         item.createdAt = data.items[existingIndex].createdAt;
@@ -502,6 +586,16 @@
       $(id).addEventListener("input", render);
       $(id).addEventListener("change", render);
     });
+
+    $("normalModeBtn").addEventListener("click", () => setViewMode("normal"));
+    $("shoppingModeBtn").addEventListener("click", () => setViewMode("shopping"));
+
+    function setViewMode(mode) {
+      viewMode = mode;
+      $("normalModeBtn").classList.toggle("active", mode === "normal");
+      $("shoppingModeBtn").classList.toggle("active", mode === "shopping");
+      render();
+    }
 
     $("exportBtn").addEventListener("click", () => {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -535,6 +629,14 @@
       }
     });
 
+    function daysSince(dateString) {
+      if (!dateString) return null;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const target = new Date(dateString + "T00:00:00");
+      return Math.max(0, Math.round((today - target) / 86400000));
+    }
+
     function daysUntil(dateString) {
       if (!dateString) return null;
       const today = new Date();
@@ -548,73 +650,92 @@
       return dateString.replaceAll("-", "/");
     }
 
-    function statusBadge(item) {
+    function ageBadge(item) {
+      const days = daysSince(item.frozenDate);
+      if (days === null) return `<span class="badge">冷凍日未設定</span>`;
+      if (days >= 31) return `<span class="badge danger">冷凍から${days}日</span>`;
+      if (days >= 15) return `<span class="badge warn">冷凍から${days}日</span>`;
+      return `<span class="badge ok">冷凍から${days}日</span>`;
+    }
+
+    function bestBeforeBadge(item) {
       const days = daysUntil(item.bestBefore);
-      if (days === null) return `<span class="badge">期限未設定</span>`;
+      if (days === null) return "";
       if (days < 0) return `<span class="badge danger">期限超過 ${Math.abs(days)}日</span>`;
-      if (days <= 7) return `<span class="badge warn">あと${days}日</span>`;
-      return `<span class="badge ok">期限まで${days}日</span>`;
+      if (days <= 7) return `<span class="badge warn">期限まで${days}日</span>`;
+      return `<span class="badge">期限 ${formatDate(item.bestBefore)}</span>`;
     }
 
     function filteredItems() {
       const keyword = $("searchText").value.trim().toLowerCase();
       const category = $("filterCategory").value;
       const sortBy = $("sortBy").value;
-
       let items = data.items.filter((item) => {
         const keywordMatch = !keyword || `${item.name} ${item.memo}`.toLowerCase().includes(keyword);
         const categoryMatch = !category || item.category === category;
-        return keywordMatch && categoryMatch;
+        return keywordMatch && categoryMatch && Number(item.quantity || 0) > 0;
       });
-
       items.sort((a, b) => {
-        if (sortBy === "bestBefore") {
-          const av = a.bestBefore || "9999-12-31";
-          const bv = b.bestBefore || "9999-12-31";
-          return av.localeCompare(bv);
-        }
+        if (sortBy === "frozenOldest") return (a.frozenDate || "9999-12-31").localeCompare(b.frozenDate || "9999-12-31");
         if (sortBy === "frozenDateDesc") return (b.frozenDate || "").localeCompare(a.frozenDate || "");
         if (sortBy === "name") return a.name.localeCompare(b.name, "ja");
-        if (sortBy === "category") return a.category.localeCompare(b.category, "ja");
+        if (sortBy === "category") return categoryRank(a.category) - categoryRank(b.category) || a.name.localeCompare(b.name, "ja");
+        if (sortBy === "quantityDesc") return Number(b.quantity || 0) - Number(a.quantity || 0);
         return 0;
       });
-
       return items;
+    }
+
+    function categoryRank(category) {
+      const index = CATEGORY_ORDER.indexOf(category);
+      return index >= 0 ? index : 999;
+    }
+
+    function formatQty(item) {
+      const qty = Number(item.quantity || 0);
+      const display = Number.isInteger(qty) ? String(qty) : qty.toFixed(1);
+      return `${display}${item.unit}`;
     }
 
     function render() {
       const items = filteredItems();
-      const totalQty = data.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
-      const soonCount = data.items.filter((item) => {
-        const days = daysUntil(item.bestBefore);
-        return days !== null && days <= 7;
+      const activeItems = data.items.filter((item) => Number(item.quantity || 0) > 0);
+      const totalQty = activeItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+      const oldCount = activeItems.filter((item) => {
+        const days = daysSince(item.frozenDate);
+        return days !== null && days >= 31;
       }).length;
-
-      $("totalKinds").textContent = data.items.length;
+      $("totalKinds").textContent = activeItems.length;
       $("totalQty").textContent = Number.isInteger(totalQty) ? totalQty : totalQty.toFixed(1);
-      $("soonCount").textContent = soonCount;
-      $("storageInfo").textContent = `保存キー：${STORAGE_KEY} / schemaVersion：${data.schemaVersion}`;
+      $("oldCount").textContent = oldCount;
+      $("storageInfo").textContent = `保存キー：${STORAGE_KEY} / schemaVersion：${data.schemaVersion} / app v${APP_VERSION}`;
 
       if (items.length === 0) {
+        $("modeHint").classList.add("hidden");
         itemsList.innerHTML = `<div class="empty">在庫がありません。まずは左のフォームから追加してください。</div>`;
         return;
       }
+      if (viewMode === "shopping") renderShoppingMode(items);
+      else renderNormalMode(items);
+    }
 
+    function renderNormalMode(items) {
+      $("modeHint").classList.add("hidden");
       itemsList.innerHTML = items.map((item) => `
         <article class="item">
           <div class="item-head">
             <div>
-              <p class="item-title">${escapeHtml(item.name)}</p>
+              <p class="item-title">${escapeHtml(item.name)} <span class="qty-large">${escapeHtml(formatQty(item))}</span></p>
               <div class="badges">
                 <span class="badge">${escapeHtml(item.category)}</span>
                 <span class="badge">${escapeHtml(item.location)}</span>
-                <span class="badge">${escapeHtml(String(item.quantity))}${escapeHtml(item.unit)}</span>
-                ${statusBadge(item)}
+                ${ageBadge(item)}
+                ${bestBeforeBadge(item)}
               </div>
             </div>
             <button class="ghost" type="button" onclick="editItem('${item.id}')">編集</button>
           </div>
-          <p class="small">冷凍日：${formatDate(item.frozenDate)} / 期限目安：${formatDate(item.bestBefore)}</p>
+          <p class="small">冷凍日：${formatDate(item.frozenDate)}</p>
           ${item.memo ? `<p class="item-note">${escapeHtml(item.memo)}</p>` : ""}
           <div class="qty-controls">
             <button class="secondary" type="button" onclick="changeQty('${item.id}', -1)">−1</button>
@@ -624,6 +745,27 @@
           </div>
         </article>
       `).join("");
+    }
+
+    function renderShoppingMode(items) {
+      $("modeHint").textContent = "買い物中に確認しやすいよう、編集ボタンを減らしてカテゴリ別に表示しています。安くても在庫が多いものは買い足し不要か判断しやすくするための表示です。";
+      $("modeHint").classList.remove("hidden");
+      const groups = CATEGORY_ORDER.map((category) => [category, items.filter((item) => item.category === category)])
+        .filter(([, groupItems]) => groupItems.length > 0);
+      itemsList.innerHTML = `<div class="compact-list">${groups.map(([category, groupItems]) => `
+        <section class="shopping-section">
+          <div class="shopping-heading"><span>${escapeHtml(category)}</span><span>${groupItems.length}種類</span></div>
+          ${groupItems.map((item) => `
+            <div class="shopping-row">
+              <div>
+                <div class="shopping-name">${escapeHtml(item.name)}</div>
+                <div class="shopping-meta">${escapeHtml(item.location)} / 冷凍日：${formatDate(item.frozenDate)}${daysSince(item.frozenDate) !== null ? ` / ${daysSince(item.frozenDate)}日経過` : ""}</div>
+              </div>
+              <div class="qty-large">${escapeHtml(formatQty(item))}</div>
+            </div>
+          `).join("")}
+        </section>
+      `).join("")}</div>`;
     }
 
     function editItem(id) {
