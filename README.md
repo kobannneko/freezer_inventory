@@ -2,20 +2,9 @@
 
 冷凍庫の在庫を夫婦で共有するためのWebアプリです。
 
-## 公開方法
+## v3.0構成
 
-GitHub Pagesで以下の構成をそのままアップロードします。
+- 表示：在庫確認・数量操作・編集/削除メニュー
+- 入力：新規登録・最近登録したものから再登録
 
-- `index.html`
-- `manifest.webmanifest`
-- `css/style.css`
-- `js/app.js`
-- `icons/icon-180.png`
-- `icons/icon-192.png`
-- `icons/icon-512.png`
-
-## Firebase側で必要な設定
-
-1. AuthenticationでGoogleログインを有効化
-2. Cloud Firestoreを作成
-3. `firestore.rules` の内容をFirestore Rulesへ貼り付けて公開
+データ保存先はCloud Firestoreです。
