@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>冷凍庫在庫管理</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --line: #d9e0ea;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --danger: #dc2626;
+      --warn: #f59e0b;
+      --ok: #16a34a;
+      --shadow: 0 10px 25px rgba(23, 32, 51, 0.08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    header {
+      padding: 22px 16px 14px;
+      background: linear-gradient(135deg, #dbeafe, #eef2ff);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    @media (min-width: 860px) {
+      .grid { grid-template-columns: 360px 1fr; align-items: start; }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 5px;
+      font-weight: 650;
+    }
+
+    input, select, textarea, button {
+      font: inherit;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    textarea { min-height: 72px; resize: vertical; }
+
+    .field { margin-bottom: 12px; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: var(--primary);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:hover { background: var(--primary-dark); }
+
+    button.secondary {
+      background: #eef2ff;
+      color: #1e3a8a;
+      border: 1px solid #c7d2fe;
+    }
+
+    button.secondary:hover { background: #e0e7ff; }
+
+    button.ghost {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    button.ghost:hover { background: #f8fafc; }
+
+    button.danger {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    button.danger:hover { background: #fecaca; }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    @media (min-width: 640px) {
+      .toolbar { grid-template-columns: 1.4fr 1fr 1fr; }
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .summary div {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .summary strong { display: block; font-size: 20px; }
+    .summary span { color: var(--muted); font-size: 12px; }
+
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+
+    .item-head {
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
+      align-items: start;
+    }
+
+    .item-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 7px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 12px;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #e2e8f0;
+    }
+
+    .badge.warn { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .badge.danger { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+    .badge.ok { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+
+    .item-note {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+
+    .qty-controls {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .qty-controls button {
+      padding: 7px 11px;
+      min-width: 38px;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 30px 8px;
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      background: #f8fafc;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>冷凍庫在庫管理</h1>
+      <p class="subtitle">登録・数量管理・期限確認・バックアップができるシンプル版</p>
+    </div>
+  </header>
+
+  <main class="wrap grid">
+    <section class="card">
+      <h2 id="formTitle">在庫を追加</h2>
+      <form id="itemForm">
+        <input type="hidden" id="editingId" />
+
+        <div class="field">
+          <label for="name">品名</label>
+          <input id="name" required placeholder="例：鶏もも肉、冷凍うどん" />
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="category">カテゴリ</label>
+            <select id="category">
+              <option>肉</option>
+              <option>魚</option>
+              <option>野菜</option>
+              <option>惣菜</option>
+              <option>主食</option>
+              <option>お菓子</option>
+              <option>その他</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="location">保管場所</label>
+            <select id="location">
+              <option>冷凍庫</option>
+              <option>上段</option>
+              <option>中段</option>
+              <option>下段</option>
+              <option>ドアポケット</option>
+              <option>別冷凍庫</option>
+              <option>その他</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="quantity">数量</label>
+            <input id="quantity" type="number" min="0" step="0.5" value="1" required />
+          </div>
+          <div class="field">
+            <label for="unit">単位</label>
+            <select id="unit">
+              <option>個</option>
+              <option>袋</option>
+              <option>パック</option>
+              <option>食</option>
+              <option>g</option>
+              <option>本</option>
+              <option>枚</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="frozenDate">冷凍日</label>
+            <input id="frozenDate" type="date" />
+          </div>
+          <div class="field">
+            <label for="bestBefore">期限目安</label>
+            <input id="bestBefore" type="date" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="memo">メモ</label>
+          <textarea id="memo" placeholder="例：半分に小分け、味付け済み"></textarea>
+        </div>
+
+        <div class="actions">
+          <button type="submit">保存</button>
+          <button class="secondary" type="button" id="resetFormBtn">入力をクリア</button>
+        </div>
+      </form>
+
+      <hr style="border:0;border-top:1px solid var(--line);margin:18px 0;" />
+
+      <h2>バックアップ</h2>
+      <p class="small">GitHub Pagesを更新する前に、エクスポートしておくと安全です。</p>
+      <div class="actions">
+        <button class="ghost" type="button" id="exportBtn">JSONエクスポート</button>
+        <button class="ghost" type="button" id="importBtn">JSONインポート</button>
+        <input class="hidden" type="file" id="importFile" accept="application/json,.json" />
+      </div>
+      <p class="small" id="storageInfo"></p>
+    </section>
+
+    <section class="card">
+      <h2>在庫一覧</h2>
+
+      <div class="summary">
+        <div><strong id="totalKinds">0</strong><span>種類</span></div>
+        <div><strong id="totalQty">0</strong><span>合計数量</span></div>
+        <div><strong id="soonCount">0</strong><span>期限近い/超過</span></div>
+      </div>
+
+      <div class="toolbar">
+        <input id="searchText" placeholder="品名・メモで検索" />
+        <select id="filterCategory">
+          <option value="">全カテゴリ</option>
+          <option>肉</option><option>魚</option><option>野菜</option><option>惣菜</option><option>主食</option><option>お菓子</option><option>その他</option>
+        </select>
+        <select id="sortBy">
+          <option value="bestBefore">期限が近い順</option>
+          <option value="frozenDateDesc">冷凍日が新しい順</option>
+          <option value="name">品名順</option>
+          <option value="category">カテゴリ順</option>
+        </select>
+      </div>
+
+      <div id="itemsList"></div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "freezer_inventory_app_data";
+    const CURRENT_SCHEMA_VERSION = 1;
+
+    const defaultData = () => ({
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      updatedAt: new Date().toISOString(),
+      items: []
+    });
+
+    let data = loadData();
+
+    const $ = (id) => document.getElementById(id);
+
+    const form = $("itemForm");
+    const itemsList = $("itemsList");
+
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return defaultData();
+        const parsed = JSON.parse(raw);
+        return migrateData(parsed);
+      } catch (error) {
+        console.error(error);
+        alert("保存データの読み込みに失敗しました。バックアップJSONがあればインポートしてください。");
+        return defaultData();
+      }
+    }
+
+    function migrateData(oldData) {
+      // 将来のアップデートではここに v1 → v2 などの変換処理を追加する。
+      if (!oldData || typeof oldData !== "object") return defaultData();
+      if (!Array.isArray(oldData.items)) oldData.items = [];
+      if (!oldData.schemaVersion) oldData.schemaVersion = 1;
+      return {
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+        updatedAt: oldData.updatedAt || new Date().toISOString(),
+        items: oldData.items.map(normalizeItem)
+      };
+    }
+
+    function normalizeItem(item) {
+      return {
+        id: item.id || crypto.randomUUID(),
+        name: item.name || "",
+        category: item.category || "その他",
+        quantity: Number(item.quantity || 0),
+        unit: item.unit || "個",
+        frozenDate: item.frozenDate || "",
+        bestBefore: item.bestBefore || "",
+        location: item.location || "冷凍庫",
+        memo: item.memo || "",
+        createdAt: item.createdAt || new Date().toISOString(),
+        updatedAt: item.updatedAt || new Date().toISOString()
+      };
+    }
+
+    function saveData() {
+      data.updatedAt = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      render();
+    }
+
+    function getFormItem() {
+      const now = new Date().toISOString();
+      return {
+        id: $("editingId").value || crypto.randomUUID(),
+        name: $("name").value.trim(),
+        category: $("category").value,
+        quantity: Number($("quantity").value),
+        unit: $("unit").value,
+        frozenDate: $("frozenDate").value,
+        bestBefore: $("bestBefore").value,
+        location: $("location").value,
+        memo: $("memo").value.trim(),
+        createdAt: now,
+        updatedAt: now
+      };
+    }
+
+    function resetForm() {
+      form.reset();
+      $("editingId").value = "";
+      $("quantity").value = 1;
+      $("frozenDate").value = new Date().toISOString().slice(0, 10);
+      $("formTitle").textContent = "在庫を追加";
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const item = getFormItem();
+      if (!item.name) return;
+
+      const existingIndex = data.items.findIndex((x) => x.id === item.id);
+      if (existingIndex >= 0) {
+        item.createdAt = data.items[existingIndex].createdAt;
+        data.items[existingIndex] = item;
+      } else {
+        data.items.unshift(item);
+      }
+      saveData();
+      resetForm();
+    });
+
+    $("resetFormBtn").addEventListener("click", resetForm);
+
+    ["searchText", "filterCategory", "sortBy"].forEach((id) => {
+      $(id).addEventListener("input", render);
+      $(id).addEventListener("change", render);
+    });
+
+    $("exportBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const date = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `freezer_inventory_backup_${date}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    $("importBtn").addEventListener("click", () => $("importFile").click());
+
+    $("importFile").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const imported = migrateData(JSON.parse(text));
+        const ok = confirm("現在の在庫データを、インポートしたデータで置き換えます。よろしいですか？");
+        if (!ok) return;
+        data = imported;
+        saveData();
+        alert("インポートしました。");
+      } catch (error) {
+        console.error(error);
+        alert("インポートに失敗しました。JSONファイルを確認してください。");
+      } finally {
+        event.target.value = "";
+      }
+    });
+
+    function daysUntil(dateString) {
+      if (!dateString) return null;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const target = new Date(dateString + "T00:00:00");
+      return Math.round((target - today) / 86400000);
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return "未設定";
+      return dateString.replaceAll("-", "/");
+    }
+
+    function statusBadge(item) {
+      const days = daysUntil(item.bestBefore);
+      if (days === null) return `<span class="badge">期限未設定</span>`;
+      if (days < 0) return `<span class="badge danger">期限超過 ${Math.abs(days)}日</span>`;
+      if (days <= 7) return `<span class="badge warn">あと${days}日</span>`;
+      return `<span class="badge ok">期限まで${days}日</span>`;
+    }
+
+    function filteredItems() {
+      const keyword = $("searchText").value.trim().toLowerCase();
+      const category = $("filterCategory").value;
+      const sortBy = $("sortBy").value;
+
+      let items = data.items.filter((item) => {
+        const keywordMatch = !keyword || `${item.name} ${item.memo}`.toLowerCase().includes(keyword);
+        const categoryMatch = !category || item.category === category;
+        return keywordMatch && categoryMatch;
+      });
+
+      items.sort((a, b) => {
+        if (sortBy === "bestBefore") {
+          const av = a.bestBefore || "9999-12-31";
+          const bv = b.bestBefore || "9999-12-31";
+          return av.localeCompare(bv);
+        }
+        if (sortBy === "frozenDateDesc") return (b.frozenDate || "").localeCompare(a.frozenDate || "");
+        if (sortBy === "name") return a.name.localeCompare(b.name, "ja");
+        if (sortBy === "category") return a.category.localeCompare(b.category, "ja");
+        return 0;
+      });
+
+      return items;
+    }
+
+    function render() {
+      const items = filteredItems();
+      const totalQty = data.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+      const soonCount = data.items.filter((item) => {
+        const days = daysUntil(item.bestBefore);
+        return days !== null && days <= 7;
+      }).length;
+
+      $("totalKinds").textContent = data.items.length;
+      $("totalQty").textContent = Number.isInteger(totalQty) ? totalQty : totalQty.toFixed(1);
+      $("soonCount").textContent = soonCount;
+      $("storageInfo").textContent = `保存キー：${STORAGE_KEY} / schemaVersion：${data.schemaVersion}`;
+
+      if (items.length === 0) {
+        itemsList.innerHTML = `<div class="empty">在庫がありません。まずは左のフォームから追加してください。</div>`;
+        return;
+      }
+
+      itemsList.innerHTML = items.map((item) => `
+        <article class="item">
+          <div class="item-head">
+            <div>
+              <p class="item-title">${escapeHtml(item.name)}</p>
+              <div class="badges">
+                <span class="badge">${escapeHtml(item.category)}</span>
+                <span class="badge">${escapeHtml(item.location)}</span>
+                <span class="badge">${escapeHtml(String(item.quantity))}${escapeHtml(item.unit)}</span>
+                ${statusBadge(item)}
+              </div>
+            </div>
+            <button class="ghost" type="button" onclick="editItem('${item.id}')">編集</button>
+          </div>
+          <p class="small">冷凍日：${formatDate(item.frozenDate)} / 期限目安：${formatDate(item.bestBefore)}</p>
+          ${item.memo ? `<p class="item-note">${escapeHtml(item.memo)}</p>` : ""}
+          <div class="qty-controls">
+            <button class="secondary" type="button" onclick="changeQty('${item.id}', -1)">−1</button>
+            <button class="secondary" type="button" onclick="changeQty('${item.id}', 1)">＋1</button>
+            <button class="ghost" type="button" onclick="setZero('${item.id}')">使い切り</button>
+            <button class="danger" type="button" onclick="deleteItem('${item.id}')">削除</button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function editItem(id) {
+      const item = data.items.find((x) => x.id === id);
+      if (!item) return;
+      $("editingId").value = item.id;
+      $("name").value = item.name;
+      $("category").value = item.category;
+      $("quantity").value = item.quantity;
+      $("unit").value = item.unit;
+      $("frozenDate").value = item.frozenDate;
+      $("bestBefore").value = item.bestBefore;
+      $("location").value = item.location;
+      $("memo").value = item.memo;
+      $("formTitle").textContent = "在庫を編集";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function changeQty(id, diff) {
+      const item = data.items.find((x) => x.id === id);
+      if (!item) return;
+      item.quantity = Math.max(0, Number(item.quantity || 0) + diff);
+      item.updatedAt = new Date().toISOString();
+      saveData();
+    }
+
+    function setZero(id) {
+      const item = data.items.find((x) => x.id === id);
+      if (!item) return;
+      const ok = confirm(`${item.name} を使い切りにしますか？数量が0になります。`);
+      if (!ok) return;
+      item.quantity = 0;
+      item.updatedAt = new Date().toISOString();
+      saveData();
+    }
+
+    function deleteItem(id) {
+      const item = data.items.find((x) => x.id === id);
+      if (!item) return;
+      const ok = confirm(`${item.name} を削除しますか？`);
+      if (!ok) return;
+      data.items = data.items.filter((x) => x.id !== id);
+      saveData();
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    resetForm();
+    render();
+  </script>
+</body>
+</html>
